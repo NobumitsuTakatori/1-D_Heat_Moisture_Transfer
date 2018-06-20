@@ -1,102 +1,98 @@
+
+# coding: utf-8
+
+# In[39]:
+
+
 #import matplotlib.pyplot as plt
 #import numpy as np
-import van_Genuchten
-import chemical_potential
+import van_Genuchten as vG
 
+
+# ### Bentheimer Sandstoneの物性値  
+# 参考：V.Voronina, L. Pel and K. Kopinga: The influence of osmotic pressure on poulticing treatments for heritage objects, Material and Structures, vol.46, pp221-231, 2013  
+# $\phi_{max}$：空隙率[-]  
+# $K_{sat}$：飽和透水係数  
+# $\lambda^{'}_P$：水蒸気圧勾配に対する気相水分伝導率  
+# $\rho$；材料の密度[kg/m3]  
+# $C$：比熱[J/(kg・K)]  
+# $\rho$：水の密度[kg/m3]  
+# $r$：水の相変化熱量  
+# 
+# 物性値を書く際における注意事項  
+# ・物性情報は必ず(tem:温度、moisture：水分状態)からなる関数する。（変数を必要としない場合でも書くこと）  
+# ・
+# 
+# 【理想】  
+# ・クラス内に"何の物性が含まれているか"、"それぞれの物性がどの水分状態の関数であるか"、"物性値を与える関数"が記載されている。  
+# ・それぞれの名称を重複することなく一度定義で完結させれること。
+
+# In[59]:
+
+
+class Property():
+    
 ##########################################
 ###     材料情報の入力        #############
-Phimax = 0.23
-Ksat   = 2.0e-7
-LAMDP  = 2.0E-10
+    Phimax = 0.23
+    Ksat   = 2.0e-7
+    LAMDP  = 2.0E-10
+    row  = 1479.25
+    C    = 750.0
+    
+    roww = 1000.0
+    r    = 4.18605E+3
 
 ###     van-Genuchten用情報    ##########
-Alfa_num = 10.0/98.0
-n_num = 2.0
-m_num = 1.0 -(1.0/n_num)
-l_num = 0.5
-
-########################################
-#   移動係数
+    Alfa = 10.0/98.0
+    n = 2.0
+    m = 1.0 -(1.0/n)
+    l = 0.5
+    
+###     水分を表す指標（水分化学ポテンシャル） ###
+    def __init__(self):
+        self.proplist = {
+            'crow' : 'Miu', 
+            'LAM' : 'Miu', 
+            'Phi' : 'Miu', 
+            'Miu' : 'Phi', 
+            'Dw' : 'Miu', 
+            'DP' : 'Miu', 
+            'DPhi' : 'Miu'
+        }
+        
+### 熱物性 ##############################
+#   熱容量
+    def crow(self,tem,miu):
+        return self.row*self.C +self.row *self.Phi(tem,miu) *self.r    
 #   熱伝導率
-def LAM_cal():
-    LAM = 1.2
-    return LAM
-
-#   水分化学ポテンシャル勾配に関する液相水分伝導率
-def LDML_cal(Miu):
-    Alfa = Alfa_num
-    n = n_num
-    m = m_num
-    l = l_num
-    LDML = van_Genuchten.Lamdml_cal_vanGenuchten(Ksat,Alfa,Miu,m,n,l)
-    return LDML
-
-#   含水率勾配に関する液相水分伝導率
-
-
-#   水分化学ポテンシャル勾配に関する気相水分伝導率
-def LDMG_cal(Tem,Miu):
-    Phi  = Phi_cal(Miu)
-    LDP  = LDP_cal(Phi)
-    RH   = chemical_potential.RH_cal(Tem,Miu) 
-    DPDM = chemical_potential.DPDM_cal(Tem,RH)
-    LDMG = LDP*DPDM
-    return LDMG
-
-#   温度勾配に関する気相水分伝導率
-def LDTG_cal(Tem,Miu):
-    Phi  = Phi_cal(Miu)
-    LDP  = LDP_cal(Phi)
-    RH   = chemical_potential.RH_cal(Tem,Miu) 
-    DPDT = chemical_potential.DPDT_cal(Tem,RH)
-    LDTG = LDP*DPDT
-    return LDTG
-
-#   水蒸気圧勾配に関する気相水分伝導率
-def LDP_cal(Miu):
-    Phi = Phi_cal(Miu)
-    Sl = Phi/Phimax
-    LDP = LAMDP*(1.0-Sl*0.9)    #注意
-    return LDP
+    def LAM(self,tem,miu):
+        return 1.2
 
 #######################################
-#   容量系
+#   水分物性
 #   含水率 from 水分化学ポテンシャル
-def Phi_cal(Miu):
-    Alfa = Alfa_num
-    n = n_num
-    m = m_num
-    Phi  = van_Genuchten.Phi_vanGenuchten(Phimax,Alfa, Miu, m, n)
-    return Phi
-
-#   含水率のポテンシャル微分
-def DPhi_cal(Miu):
-    Alfa = Alfa_num
-    n = n_num
-    m = m_num
-    DPhi = van_Genuchten.DPhi_vanGenuchten(Phimax,Alfa, Miu, m, n)
-    return DPhi
-
+    def Phi(self,tem,miu):
+        return vG.Phi(self.Phimax,self.Alfa, miu, self.m, self.n)
 #   水分化学ポテンシャル from 含水率
-def Miu_cal(Phi):
-    Alfa = Alfa_num
-    n = n_num
-    m = m_num
-    Miu = van_Genuchten.Miu_vanGenuchten(Phimax, Phi, Alfa, m, n)
-    return Miu
+    def Miu(self,tem,phi):
+        return vG.Miu(self.Phimax, phi, self.Alfa, self.m, self.n)                                              
+#   含水率勾配に関する液相水分伝導率
+    def Dw(self,tem,miu):
+        return self.Ksat*vG.Kl(self.Alfa ,miu ,self.m ,self.n ,self.l)
+#   水蒸気圧勾配に関する気相水分伝導率
+    def DP(self,tem,miu):
+        Phi = self.Phi(tem,miu)
+        Sl = Phi/self.Phimax
+        return self.LAMDP*(1.0-Sl*0.9)
+    
+#   含水率のポテンシャル微分
+    def DPhi(self,tem,miu):
+        return vG.DPhi(self.Phimax ,self.Alfa , miu, self.m, self.n)
 
-#   熱容量
-def crow_cal(Miu):
-    Phi = Phi_cal(Miu)
-    crow = 1479.25*750.0 +1000.0 *Phi *4.18605E+3
-    return crow    
 
-#   水分容量(ポテンシャル使用時)
-def cmiu_cal(Miu):
-    roww = 1000.0
-    dphi = DPhi_cal(Miu)
-    cmiu = roww * dphi
-    return cmiu
+# In[57]:
+
 
 #######################################
 ###     物性値の確認     ###
@@ -109,3 +105,11 @@ def cmiu_cal(Miu):
 #plt.plot(-x,y)
 #plt.show()
 ###########################
+
+
+# In[60]:
+
+
+m = Property()
+m.proplist
+
