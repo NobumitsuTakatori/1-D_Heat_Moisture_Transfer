@@ -4,6 +4,10 @@ import vapour_pressure
 
 Rv_num = 8316.96/18.016
 
+####################################################
+### 水分を表すパラメータの変換
+
+#
 def Miu_cal(Tem,RH):
     Rv = Rv_num
     Miu= Rv*Tem*np.log(RH)
